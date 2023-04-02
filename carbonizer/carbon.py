@@ -20,27 +20,31 @@ class Carbonizer:
     background: utils.RGBA = utils.RGBA(0, 0, 0, 0)
     font: str = "Night Owl"
 
-    def __call__(self):
+    async def __call__(self):
         if not self.is_valid():
-            return 0
+            return False
         try:
             with open(self.input_file, "r") as f:
                 code = f.read()
-            self.carbonize_code(code)
+            await self.carbonize_code(code)
         except Exception as e:
             logger.error(f"Failed to carbonize {self.input_file} - due to: {e}")
+            return False
+        else:
+            return True
 
-    def carbonize_code(self, code):
+    async def carbonize_code(self, code):
         # TODO: refactor to make this SRP compatible
-        loop = asyncio.get_event_loop()
+
         data = {"code": quote(code.encode("utf-8")),
                 "backgroundColor": "rgba(0, 0, 0, 0)",
-                "shadow": True
+                "shadow": True,
+                "theme": self.font
                 }
         validated_body = utils.validate_body(data)
         carbon_url = utils.create_url(validated_body)
         with tempfile.TemporaryDirectory() as tmp_path:
-            loop.run_until_complete(self.get_response(carbon_url, tmp_path))
+            await (self.get_response(carbon_url, tmp_path))
             expected_file = pathlib.Path(tmp_path) / "carbon.png"
             if expected_file.exists():
                 shutil.move(expected_file, self.output_file.absolute())
@@ -59,7 +63,8 @@ class Carbonizer:
         # element = await page.querySelector("#export-container  .container-bg")
         # element = await page.querySelector(".react-codemirror2")
         # await element.screenshot({'path': self.output_filename.absolute()})
-        el = await page.querySelector(".jsx-2184717013")
+        el = await page.querySelector(".CodeMirror > div:nth-child(1) > textarea:nth-child(1)")
+        await el.type(" ") # Force editor to adjust layout
         el = await page.querySelector(".jsx-2184717013")
         await el.click()
         # TODO: find better way to wait for carbon file
@@ -92,7 +97,3 @@ async def open_carbonnowsh(url, tmp_path):
     })
     await page.goto(url, timeout=100000)
     return browser, page
-
-
-
-

@@ -1,5 +1,7 @@
 import dataclasses
 
+import urllib.parse
+
 from carbonizer import options
 
 
@@ -38,16 +40,8 @@ def create_url(validated_body) -> str:
                 validated_body['backgroundColor'])
     except KeyError:
         pass
-    for option in validated_body:
-        if first:
-            first = False
-            url = base_url + \
-                f"?{options.query_param[option]}={validated_body[option]}"
-        else:
-            url = url + \
-                f"&{options.query_param[option]}={validated_body[option]}"
-    return url
-
+    shortened = {options.query_param[option] : value for option, value in validated_body.items()}
+    return f"{base_url}?{urllib.parse.urlencode(shortened)}"
 
 def hex2rgb(h):
     h = h.lstrip('#')

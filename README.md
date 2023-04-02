@@ -20,10 +20,10 @@ carbonizer --help
 carbonizer some_file.py 
 
 # To create the output in a specific folder
-carbonizer -t target  some_file.py
+carbonizer -o target  some_file.py
 
 # This will grab all files and carbonize them
-carbonizer -t target . 
+carbonizer -o target . 
 
 # The -c flag directly copied the output into your clipboard
 carbonizer -c some_file.py
