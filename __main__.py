@@ -1,6 +1,6 @@
 import typer
 
-import carbonizer
+import carbonizer.cli
 
 
 if __name__ == '__main__':
