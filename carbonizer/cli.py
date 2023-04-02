@@ -1,46 +1,68 @@
 import pathlib
+import typing
 
 import typer
 
-import utils
-import carbon
+from carbonizer import utils, carbon, clipboard
 
 app = typer.Typer()
 
 
-def wrap_carbonier(file, exclude, output_folder, rgba, font):
+def wrap_carbonizer(file, exclude, output_folder, rgba, font):
+    output = output_folder / ("carbonized_" + file.stem + ".png")
     carbonizer = carbon.Carbonizer(input_file=file,
-                                   output_filename=output_folder / ("carbonized_" + file.stem + ".png"),
+                                   output_file=output,
                                    exclude=exclude,
                                    background=rgba,
                                    font=font)
     carbonizer()
-
+    return output
 
 @app.command()
 def carbonize(
-        walk: str = typer.Option("", "--walk", "-w"),
-        file: str =typer.Option("", "--file"),
+        walk: bool = typer.Option(False, "--walk", "-w"),
+        input: str =typer.Argument("."),
+        font: str = typer.Option("Night Owl", "--font", "-f"),
+        glob_pattern: str = typer.Option("*", "--glob", "-g"),
         output_folder: str = typer.Option(".", "--output-folder", "-t"),
-        exclude: str = typer.Option("__pychache__*", "--exclude", "--filter", "-e")
+        exclude: str = typer.Option("__pychache__*", "--exclude", "--filter", "-e"),
+        copy: bool = typer.Option(False, "--copy", "-c"),
+        rgbs: str = typer.Option("0:0:0:0", "--rgbs","--background", help="background in rgba seperated with ':'"),
+        dry_run: bool = typer.Option(False, "--dry-run",)
 ):
-    if walk:
-        path = pathlib.Path(walk)
-        files = path.rglob("*")
-    elif file:
-        files = [pathlib.Path(file)]
+    # TODO: Refactor to comply SRP
+    # TODO: move file_input as Argument
+    file: pathlib.PosixPath
+    files: typing.Iterable[pathlib.Path]
+    outputs: typing.List[pathlib.Path]
+    path = pathlib.Path(input)
+
+    if not path.exists():
+        typer.echo(f"No such file or directory - {path}")
+        raise typer.Exit()
+
+    if path.is_file():
+        files = [path]
+    elif walk:
+        files = path.rglob(glob_pattern)
     else:
-        raise ValueError("Neither File nor Folder are given")
+        files = [path.glob(glob_pattern)]
 
     output_folder = pathlib.Path(output_folder)
     output_folder.mkdir(exist_ok=True)
-    file: pathlib.PosixPath
+    rgba = utils.RGBA(*[int(x) for x in rgbs.split(":")])
+
+    outputs = []
     for file in files:
-        wrap_carbonier(file,
-                       output_folder / ("carbonized_" + file.stem + ".png"),
-                       exclude,
-                       utils.RGBA(0, 0, 0,0),
-                       "night owl")
+        out = wrap_carbonizer(file,
+                              exclude,
+                              output_folder,
+                              rgba,
+                              font)
+        outputs.append(out)
+
+    if copy:
+        clipboard.Clipboard().copy(outputs[-1])
 
 
 if __name__ == "__main__":

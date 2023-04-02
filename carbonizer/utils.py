@@ -1,6 +1,6 @@
 import dataclasses
 
-import options
+from carbonizer import options
 
 
 @dataclasses.dataclass
@@ -22,8 +22,8 @@ def validate_body(body) -> dict:
             continue
         if not (option in options.default):
             continue
-            print(f"Unexpected option: {option} found. Ignoring!")
-            #raise Exception(f"Unexpected option: {option}")
+            # print(f"Unexpected option: {option} found. Ignoring!")
+            # raise Exception(f"Unexpected option: {option}")
         validated_body[option] = body[option]
     return validated_body
 
