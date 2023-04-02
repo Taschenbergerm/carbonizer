@@ -27,6 +27,9 @@ carbonizer -o target .
 
 # The -c flag directly copied the output into your clipboard
 carbonizer -c some_file.py
+
+# If you prefer to run the raw code you can also use the project like 
+python __main__.py  -t "one-light" carbonizer -o target
 ```
 
 Note: The copy functionality is only Linux  is tested  while Mac is also supported - theoretically.
