@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "carbonizer"
-version = "0.1.0"
+version = "0.2.0"
 description = "A Small CLI to utilize Carbon.now.sh"
 authors = ["marvin taschenberger <marvin.taschenberger@gmail.com>"]
 license = "MIT"
@@ -10,6 +10,8 @@ readme = "README.md"
 python = "^3.10"
 pyppeteer = "^1.0.2"
 loguru = "^0.6.0"
+rich = "^13.3.3"
+typer = "^0.7.0"
 
 [build-system]
 requires = ["poetry-core"]
