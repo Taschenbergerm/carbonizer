@@ -39,7 +39,6 @@ def carbonize(
         dry_run: bool = typer.Option(False, "--dry-run",)
 ):
     # TODO: Refactor to comply SRP
-    # TODO: move file_input as Argument
     files: typing.Iterable[pathlib.Path]
     outputs: typing.List[pathlib.Path]
 
