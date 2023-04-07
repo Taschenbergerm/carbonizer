@@ -12,6 +12,10 @@ from pyppeteer import launch
 from carbonizer import utils
 
 
+class CarbonNowException(Exception):
+    ...
+
+
 @dataclasses.dataclass
 class Carbonizer:
     input_file: pathlib.Path
@@ -19,8 +23,17 @@ class Carbonizer:
     exclude: str
     background: utils.RGBA = utils.RGBA(0, 0, 0, 0)
     font: str = "Night Owl"
+    temp_carbon: str = "carbon.png"
+    file_beat: int = 500
+    limit: int = 5000
 
     async def __call__(self):
+        await  self.run_async()
+
+    def run(self):
+        asyncio.run(self.run_async())
+
+    async def run_async(self):
         if not self.is_valid():
             return False
         try:
@@ -34,8 +47,6 @@ class Carbonizer:
             return True
 
     async def carbonize_code(self, code):
-        # TODO: refactor to make this SRP compatible
-
         data = {"code": quote(code.encode("utf-8")),
                 "backgroundColor": "rgba(0, 0, 0, 0)",
                 "shadow": True,
@@ -44,33 +55,22 @@ class Carbonizer:
         validated_body = utils.validate_body(data)
         carbon_url = utils.create_url(validated_body)
         with tempfile.TemporaryDirectory() as tmp_path:
-            await (self.get_response(carbon_url, tmp_path))
-            expected_file = pathlib.Path(tmp_path) / "carbon.png"
-            if expected_file.exists():
-                shutil.move(expected_file, self.output_file.absolute())
-                # ERROR: this can cause errors as temfiles seems to be on a different mounts on LINUX
-                # expected_file.rename(self.output_file.absolute())
-            else:
-                # TODO: create proper Exception to reflect error
-                raise Exception(f"Couldnt download carbonized version of {self.input_file}")
-
+            expected_file = await (self.get_response(carbon_url, tmp_path))
+            shutil.move(expected_file, self.output_file.absolute())
         return self.output_file
 
     async def get_response(self, url, tmp_path):
-        # TODO: test if this works for all cenarios
-        # TODO remove comments
-        browser, page = await open_carbonnowsh(url, tmp_path)  # FIXME - let python create a temporary path
-        # element = await page.querySelector("#export-container  .container-bg")
-        # element = await page.querySelector(".react-codemirror2")
-        # await element.screenshot({'path': self.output_filename.absolute()})
+        expected_file = pathlib.Path(tmp_path) / self.temp_carbon
+        browser, page = await open_carbonnowsh(url, tmp_path)
         el = await page.querySelector(".CodeMirror > div:nth-child(1) > textarea:nth-child(1)")
         await el.type(" ") # Force editor to adjust layout
         el = await page.querySelector(".jsx-2184717013")
         await el.click()
-        # TODO: find better way to wait for carbon file
-        # TODO: likely watch for file instead of fixed timeout
-        await page.waitFor(2000)
+        success = await self.check_file_exists(expected_file)
         await browser.close()
+        if not success:
+            raise CarbonNowException(f"Could not download file in time - try again and maybe increase the limit ")
+        return expected_file
 
     def is_valid(self) -> bool:
         res = False
@@ -80,6 +80,17 @@ class Carbonizer:
             logger.debug(f"Skipping file - {self.input_file}")
             res = False
         return res
+
+    async def check_file_exists(self,file: pathlib.Path) -> bool:
+        counter = 0
+        while True:
+            if file.exists():
+                return True
+            elif counter >= self.limit:
+                return False
+            else:
+                counter += self.file_beat
+                await asyncio.sleep(self.file_beat)
 
 
 async def open_carbonnowsh(url, tmp_path):
