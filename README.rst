@@ -22,18 +22,18 @@ Usage
 
 .. code-block:: bash 
 
-    carbonizer --help
+    carbonize --help
     # This creates a carbonized version in the same directory
-    carbonizer some_file.py 
+    carbonize some_file.py
     
     # To create the output in a specific folder
-    carbonizer -o target  some_file.py
+    carbonize -o target  some_file.py
     
     # This will grab all files and carbonize them
-    carbonizer -o target . 
+    carbonize -o target .
     
     # The -c flag directly copied the output into your clipboard
-    carbonizer -c some_file.py
+    carbonize -c some_file.py
     
     # If you prefer to run the raw code you can also use the project like 
     python __main__.py  -t "one-light" carbonizer -o target
